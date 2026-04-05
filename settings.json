@@ -1,0 +1,7 @@
+{
+  "header_ad": "<div class='p-4 bg-neutral-800/50 border border-dashed border-neutral-700 rounded-xl text-center text-neutral-500'>Header Ad Placeholder</div>",
+  "sidebar_ad": "<div class='h-full min-h-[300px] p-4 bg-neutral-800/50 border border-dashed border-neutral-700 rounded-xl text-center text-neutral-500 flex items-center justify-center'>Sidebar Ad Placeholder</div>",
+  "above_download_ad": "<div class='p-4 bg-neutral-800/50 border border-dashed border-neutral-700 rounded-xl text-center text-neutral-500 mb-4'>Above Download Ad Placeholder</div>",
+  "footer_ad": "<div class='p-4 bg-neutral-800/50 border border-dashed border-neutral-700 rounded-xl text-center text-neutral-500 mt-8'>Footer Ad Placeholder</div>",
+  "admin_password": "admin"
+}
