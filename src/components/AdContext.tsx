@@ -1,45 +1,77 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface AdSettings {
-  header_ad: string;
-  sidebar_ad: string;
-  above_download_ad: string;
-  footer_ad: string;
+  Global_Header: string;
+  Home_Hero_Ad: string;
+  Sidebar_Ad: string;
+  Download_Page_Ad: string;
 }
 
-const AdContext = createContext<{ settings: AdSettings | null; refresh: () => void }>({
-  settings: null,
-  refresh: () => {},
+interface User {
+  id: string;
+  displayName: string;
+  emails: { value: string }[];
+  photos: { value: string }[];
+}
+
+interface AdContextType {
+  ads: AdSettings | null;
+  user: User | null;
+  loading: boolean;
+  refresh: () => Promise<void>;
+}
+
+const AdContext = createContext<AdContextType>({
+  ads: null,
+  user: null,
+  loading: true,
+  refresh: async () => {},
 });
 
 export const useAds = () => useContext(AdContext);
 
 export function AdProvider({ children }: { children: React.ReactNode }) {
-  const [settings, setSettings] = useState<AdSettings | null>(null);
+  const [ads, setAds] = useState<AdSettings | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const fetchSettings = async () => {
+  const fetchData = async () => {
     try {
-      const res = await fetch('/api/settings');
-      const data = await res.json();
-      setSettings(data);
+      const [adsRes, userRes] = await Promise.all([
+        fetch('/api/ads'),
+        fetch('/api/user')
+      ]);
+      const adsData = await adsRes.json();
+      const userData = await userRes.json();
+      setAds(adsData);
+      setUser(userData);
     } catch (e) {
-      console.error("Failed to fetch ad settings", e);
+      console.error("Failed to fetch data", e);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSettings();
+    fetchData();
   }, []);
 
   return (
-    <AdContext.Provider value={{ settings, refresh: fetchSettings }}>
+    <AdContext.Provider value={{ ads, user, loading, refresh: fetchData }}>
       {children}
     </AdContext.Provider>
   );
 }
 
 export function AdRenderer({ html, className }: { html?: string; className?: string }) {
-  if (!html) return null;
+  if (!html || html.includes('<!--')) {
+    return (
+      <div className={`bg-neutral-900/50 border border-dashed border-neutral-800 rounded-xl flex items-center justify-center p-8 text-neutral-600 font-mono text-sm ${className}`}>
+        [ AD SLOT: {html?.replace('<!-- ', '').replace(' -->', '') || 'Placeholder'} ]
+      </div>
+    );
+  }
+
   return (
     <div 
       className={className}

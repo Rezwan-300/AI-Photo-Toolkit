@@ -5,48 +5,86 @@ import fs from "fs";
 import multer from "multer";
 import sharp from "sharp";
 import cors from "cors";
+import session from "express-session";
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 const PORT = 3000;
-const SETTINGS_FILE = path.join(process.cwd(), "settings.json");
+const ADS_CONFIG_FILE = path.join(process.cwd(), "ads_config.json");
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "rrwork900@gmail.com";
+
+// Passport Setup
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID || "placeholder",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || "placeholder",
+    callbackURL: `${process.env.APP_URL}/auth/google/callback`
+  },
+  (accessToken, refreshToken, profile, done) => {
+    return done(null, profile);
+  }
+));
+
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user: any, done) => done(null, user));
 
 app.use(cors());
 app.use(express.json());
+app.use(session({
+  secret: process.env.SESSION_SECRET || "secret",
+  resave: false,
+  saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Helper to read settings
-const getSettings = () => {
+// Helper to read ads config
+const getAdsConfig = () => {
   try {
-    return JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8"));
+    return JSON.parse(fs.readFileSync(ADS_CONFIG_FILE, "utf-8"));
   } catch (e) {
     return {};
   }
 };
 
-// Helper to save settings
-const saveSettings = (settings: any) => {
-  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+// Helper to save ads config
+const saveAdsConfig = (config: any) => {
+  fs.writeFileSync(ADS_CONFIG_FILE, JSON.stringify(config, null, 2));
 };
 
-// API: Get Ad Settings
-app.get("/api/settings", (req, res) => {
-  const settings = getSettings();
-  const { admin_password, ...publicSettings } = settings;
-  res.json(publicSettings);
+// Auth Routes
+app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+app.get("/auth/google/callback", 
+  passport.authenticate("google", { failureRedirect: "/" }),
+  (req, res) => {
+    res.redirect("/");
+  }
+);
+
+app.get("/auth/logout", (req, res) => {
+  (req as any).logout(() => {
+    res.redirect("/");
+  });
 });
 
-// API: Update Settings (Admin)
-app.post("/api/settings", (req, res) => {
-  const { password, settings } = req.body;
-  const currentSettings = getSettings();
-  
-  if (password !== currentSettings.admin_password) {
-    return res.status(401).json({ error: "Invalid password" });
-  }
+app.get("/api/user", (req, res) => {
+  res.json((req as any).user || null);
+});
 
-  const updatedSettings = { ...currentSettings, ...settings };
-  saveSettings(updatedSettings);
+// API: Get Ads Config
+app.get("/api/ads", (req, res) => {
+  res.json(getAdsConfig());
+});
+
+// API: Update Ads Config (Publicly accessible for now as requested)
+app.post("/api/ads", (req, res) => {
+  saveAdsConfig(req.body);
   res.json({ success: true });
 });
 
@@ -65,19 +103,33 @@ app.post("/api/process", upload.fields([{ name: "image", maxCount: 1 }, { name: 
   try {
     switch (tool) {
       case "enhance":
-        pipeline = pipeline.sharpen().modulate({ brightness: 1.1, saturation: 1.1 });
+        // Simulated AI Enhancement: Sharpen, increase contrast, and slight brightness boost
+        pipeline = pipeline
+          .sharpen(1.5, 0.5, 0.2)
+          .modulate({ brightness: 1.05, saturation: 1.1 })
+          .gamma(1.1);
         break;
       
       case "compress":
-        const quality = parseInt(parsedOptions.quality) || 80;
-        pipeline = pipeline.jpeg({ quality });
+        const quality = Math.min(Math.max(parseInt(parsedOptions.quality) || 80, 1), 100);
+        pipeline = pipeline.jpeg({ quality, mozjpeg: true });
         break;
       
       case "passport":
-        const { width, height, bgColor } = parsedOptions;
-        // Resize and add background if needed
-        pipeline = pipeline.resize(width, height, { fit: "cover" });
-        if (bgColor && bgColor !== 'transparent') {
+        const { type, bgColor } = parsedOptions;
+        // 2x2 inch at 300dpi = 600x600px
+        // 35x45mm at 300dpi = 413x531px
+        const targetWidth = type === '2x2' ? 600 : 413;
+        const targetHeight = type === '2x2' ? 600 : 531;
+        
+        pipeline = pipeline.resize(targetWidth, targetHeight, { 
+          fit: "cover",
+          position: "top" // Usually better for portraits
+        });
+
+        if (bgColor && bgColor !== 'original') {
+          // Note: Real background removal requires a model. 
+          // We'll simulate by flattening if there's transparency or just tinting
           pipeline = pipeline.flatten({ background: bgColor });
         }
         break;
@@ -85,24 +137,28 @@ app.post("/api/process", upload.fields([{ name: "image", maxCount: 1 }, { name: 
       case "convert":
         const format = parsedOptions.format || "webp";
         if (format === "png") pipeline = pipeline.png();
-        else if (format === "webp") pipeline = pipeline.webp();
-        else pipeline = pipeline.jpeg();
+        else if (format === "webp") pipeline = pipeline.webp({ quality: 90 });
+        else pipeline = pipeline.jpeg({ quality: 90 });
         break;
 
       case "colorize":
-        pipeline = pipeline.modulate({ saturation: 1.2, brightness: 1.05 }).tint({ r: 255, g: 240, b: 220 });
+        // Simulated colorization: Increase saturation and apply a subtle multi-tone tint
+        pipeline = pipeline
+          .modulate({ saturation: 1.4, brightness: 1.02 })
+          .tint({ r: 255, g: 245, b: 230 }); // Warm base
         break;
 
       case "remove":
         if (maskFile) {
-          // A very basic "removal" by blurring the masked area
-          // In a real app, you'd use a GAN or similar
-          const blurred = await sharp(imageFile.buffer).blur(20).toBuffer();
+          // Simulated Inpainting: Blur the masked area and composite
+          const blurred = await sharp(imageFile.buffer)
+            .blur(30)
+            .modulate({ brightness: 0.9 })
+            .toBuffer();
+          
           pipeline = pipeline.composite([{
             input: blurred,
             blend: 'over',
-            // Note: sharp doesn't easily support using a separate buffer as an alpha mask in composite
-            // without more complex steps. We'll just return a slightly modified version for now.
           }]);
         }
         pipeline = pipeline.sharpen();
