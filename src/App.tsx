@@ -1,8 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Camera, Menu, X, Settings, Shield, Info, Mail } from 'lucide-react';
+import { Camera, Menu, X, Shield, Info, Mail } from 'lucide-react';
 import { Home } from './components/Home';
-import { Admin } from './components/Admin';
 import { Enhance, Compress, Passport, Remove, Convert, Colorize } from './components/Tools';
 import { AdProvider, AdRenderer, useAds } from './components/AdContext';
 import { Footer } from './components/Footer';
@@ -46,9 +45,6 @@ function Navbar() {
                 {item.name}
               </Link>
             ))}
-            <Link to="/admin" className="p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 transition-all">
-              <Settings className="w-5 h-5 text-neutral-400" />
-            </Link>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -77,13 +73,6 @@ function Navbar() {
               {item.name}
             </Link>
           ))}
-          <Link
-            to="/admin"
-            onClick={() => setIsOpen(false)}
-            className="block px-6 py-4 rounded-2xl text-lg font-bold text-neutral-400 hover:bg-white/5"
-          >
-            Admin Panel
-          </Link>
         </div>
       )}
     </nav>
@@ -103,7 +92,6 @@ function Layout() {
           <Route path="/remove" element={<Remove />} />
           <Route path="/convert" element={<Convert />} />
           <Route path="/colorize" element={<Colorize />} />
-          <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
       <Footer />

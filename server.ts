@@ -5,9 +5,6 @@ import fs from "fs";
 import multer from "multer";
 import sharp from "sharp";
 import cors from "cors";
-import session from "express-session";
-import passport from "passport";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -15,31 +12,9 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 const ADS_CONFIG_FILE = path.join(process.cwd(), "ads_config.json");
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "rrwork900@gmail.com";
-
-// Passport Setup
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID || "placeholder",
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || "placeholder",
-    callbackURL: `${process.env.APP_URL}/auth/google/callback`
-  },
-  (accessToken, refreshToken, profile, done) => {
-    return done(null, profile);
-  }
-));
-
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((user: any, done) => done(null, user));
 
 app.use(cors());
 app.use(express.json());
-app.use(session({
-  secret: process.env.SESSION_SECRET || "secret",
-  resave: false,
-  saveUninitialized: true
-}));
-app.use(passport.initialize());
-app.use(passport.session());
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -57,35 +32,14 @@ const saveAdsConfig = (config: any) => {
   fs.writeFileSync(ADS_CONFIG_FILE, JSON.stringify(config, null, 2));
 };
 
-// Auth Routes
-app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-
-app.get("/auth/google/callback", 
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => {
-    res.redirect("/");
-  }
-);
-
-app.get("/auth/logout", (req, res) => {
-  (req as any).logout(() => {
-    res.redirect("/");
-  });
-});
-
-app.get("/api/user", (req, res) => {
-  res.json((req as any).user || null);
-});
-
 // API: Get Ads Config
 app.get("/api/ads", (req, res) => {
   res.json(getAdsConfig());
 });
 
-// API: Update Ads Config (Publicly accessible for now as requested)
-app.post("/api/ads", (req, res) => {
-  saveAdsConfig(req.body);
-  res.json({ success: true });
+// API: Get User (Empty since auth is removed)
+app.get("/api/user", (req, res) => {
+  res.json(null);
 });
 
 // API: Image Processing

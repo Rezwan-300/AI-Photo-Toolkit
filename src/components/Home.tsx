@@ -88,9 +88,6 @@ export function Home() {
             <a href="#tools" className="px-10 py-5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl transition-all shadow-[0_0_40px_rgba(37,99,235,0.3)] hover:scale-105">
               Explore Tools
             </a>
-            <Link to="/admin" className="px-10 py-5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl transition-all border border-white/10 backdrop-blur-xl">
-              Admin Dashboard
-            </Link>
           </div>
         </motion.div>
       </section>
