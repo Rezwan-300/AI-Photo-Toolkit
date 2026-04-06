@@ -1,6 +1,6 @@
 {
-  "Global_Header": "<!-- Global Header Ad Placeholder -->",
-  "Home_Hero_Ad": "<!-- Home Hero Ad Placeholder -->",
-  "Sidebar_Ad": "<!-- Sidebar Ad Placeholder -->",
-  "Download_Page_Ad": "<!-- Download Page Ad Placeholder -->"
+  "Global_Header": "<script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3347584472886986\" crossorigin=\"anonymous\"></script>",
+  "Home_Hero_Ad": "<script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3347584472886986\" crossorigin=\"anonymous\"></script>",
+  "Sidebar_Ad": "<script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3347584472886986\" crossorigin=\"anonymous\"></script>",
+  "Download_Page_Ad": "<script async src=\"https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3347584472886986\" crossorigin=\"anonymous\"></script>"
 }
